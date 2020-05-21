@@ -75,3 +75,6 @@ data:
   model_save_dir:
     val: "./ernie_models"
     meaning: "The model will be saved in this path."
+  output_file:
+    val: "./results/ernie"
+    meaning: "output file path"
