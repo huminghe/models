@@ -1,5 +1,5 @@
 #!/bin/bash
-export FLAGS_fraction_of_gpu_memory_to_use=0.02
+export FLAGS_fraction_of_gpu_memory_to_use=0.9
 export FLAGS_eager_delete_tensor_gb=0.0
 export FLAGS_fast_eager_deletion_mode=1
 export CUDA_VISIBLE_DEVICES=0,1,2,3     #   which GPU to use
@@ -70,17 +70,24 @@ function run_eval() {
 
 function run_infer() {
     echo "infering"
-    python predict.py \
-        --batch_size 200 \
-        --word_emb_dim 128 \
-        --grnn_hidden_dim 128 \
-        --bigru_num 2 \
-        --use_cuda False \
-        --init_checkpoint ./model_baseline \
-        --infer_data ./data/infer.tsv \
-        --word_dict_path ./conf/word.dic \
-        --label_dict_path ./conf/tag.dic \
-        --word_rep_dict_path ./conf/q2b.dic
+    export CUDA_VISIBLE_DEVICES=0     # which GPU to use
+
+    for num in {0..999}
+    do
+            num_f=`echo ${num}|awk '{printf("%05d", $0)}'`
+            python3 predict.py \
+                --batch_size 200 \
+                --word_emb_dim 128 \
+                --grnn_hidden_dim 128 \
+                --bigru_num 2 \
+                --use_cuda true \
+                --init_checkpoint ./model_baseline \
+                --infer_data ./data/corpus_new/part-${num_f} \
+                --output_file ./results/base/part-${num_f} \
+                --word_dict_path ./conf/word.dic \
+                --label_dict_path ./conf/tag.dic \
+                --word_rep_dict_path ./conf/q2b.dic
+    done
 }
 
 

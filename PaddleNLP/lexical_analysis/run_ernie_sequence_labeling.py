@@ -38,6 +38,7 @@ sys.path.append("../shared_modules/")
 from models.representation.ernie import ErnieConfig
 from models.model_check import check_cuda
 from models.model_check import check_version
+import codecs
 
 
 def evaluate(exe, test_program, test_pyreader, test_ret):
@@ -281,23 +282,25 @@ def do_infer(args):
     dataset = Dataset(id2word_dict, id2label_dict)
 
     # make prediction
-    for data in pyreader():
-        (words, crf_decode, seq_lens) = exe.run(infer_program,
-                                                fetch_list=[
-                                                    infer_ret["words"],
-                                                    infer_ret["crf_decode"],
-                                                    infer_ret["seq_lens"]
-                                                ],
-                                                feed=data[0],
-                                                return_numpy=True)
-        # User should notice that words had been clipped if long than args.max_seq_len
-        results = utils.parse_padding_result(words, crf_decode, seq_lens,
-                                             dataset)
-        for sent, tags in results:
-            result_list = [
-                '(%s, %s)' % (ch, tag) for ch, tag in zip(sent, tags)
-            ]
-            print(''.join(result_list))
+    with codecs.open(args.output_file, mode='w+', encoding='utf-8') as f:
+
+        for data in pyreader():
+            (words, crf_decode, seq_lens) = exe.run(infer_program,
+                                                    fetch_list=[
+                                                        infer_ret["words"],
+                                                        infer_ret["crf_decode"],
+                                                        infer_ret["seq_lens"]
+                                                    ],
+                                                    feed=data[0],
+                                                    return_numpy=True)
+            # User should notice that words had been clipped if long than args.max_seq_len
+            results = utils.parse_padding_result(words, crf_decode, seq_lens,
+                                                 dataset)
+
+            for sent, tags in results:
+                result_list = ['%s/%s' % (ch, tag) for ch, tag in zip(sent, tags)]
+                f.write(' '.join(result_list))
+                f.write("\n")
 
 
 if __name__ == "__main__":

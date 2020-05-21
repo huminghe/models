@@ -27,6 +27,7 @@ import creator
 sys.path.append('../shared_modules/models/')
 from model_check import check_cuda
 from model_check import check_version
+import codecs
 
 parser = argparse.ArgumentParser(__doc__)
 # 1. model parameters
@@ -55,6 +56,8 @@ data_g.add_arg(
     "The number of sequences contained in a mini-batch, "
     "or the maximum number of tokens (include paddings) contained in a mini-batch."
 )
+
+data_g.add_arg("output_file", str, "./result/baidu/result.txt", "result file path")
 
 
 def do_infer(args):
@@ -88,15 +91,19 @@ def do_infer(args):
     # load model
     utils.init_checkpoint(exe, args.init_checkpoint, infer_program)
 
-    result = infer_process(
-        exe=exe,
-        program=infer_program,
-        reader=pyreader,
-        fetch_vars=[infer_ret['words'], infer_ret['crf_decode']],
-        dataset=dataset)
-    for sent, tags in result:
-        result_list = ['(%s, %s)' % (ch, tag) for ch, tag in zip(sent, tags)]
-        print(''.join(result_list))
+    with codecs.open(args.output_file, mode='w+', encoding='utf-8') as f:
+
+        result = infer_process(
+            exe=exe,
+            program=infer_program,
+            reader=pyreader,
+            fetch_vars=[infer_ret['words'], infer_ret['crf_decode']],
+            dataset=dataset)
+
+        for sent, tags in result:
+            result_list = ['%s/%s' % (ch, tag) for ch, tag in zip(sent, tags)]
+            f.write(' '.join(result_list))
+            f.write("\n")
 
 
 def infer_process(exe, program, reader, fetch_vars, dataset):

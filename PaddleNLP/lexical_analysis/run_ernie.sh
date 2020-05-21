@@ -1,5 +1,5 @@
 #set -eux
-export FLAGS_fraction_of_gpu_memory_to_use=0.02
+export FLAGS_fraction_of_gpu_memory_to_use=0.9
 export FLAGS_eager_delete_tensor_gb=0.0
 export FLAGS_fast_eager_deletion_mode=1
 # export FLAGS_sync_nccl_allreduce=1
@@ -7,7 +7,7 @@ export FLAGS_fast_eager_deletion_mode=1
 # export NCCL_IB_GID_INDEX=3
 # export GLOG_v=1
 # export GLOG_logtostderr=1
-export CUDA_VISIBLE_DEVICES=0        # which GPU to use
+export CUDA_VISIBLE_DEVICES=1        # which GPU to use
 
 ERNIE_PRETRAINED_MODEL_PATH=./pretrained/
 ERNIE_FINETUNED_MODEL_PATH=./model_finetuned
@@ -86,20 +86,27 @@ function run_eval() {
 
 function run_infer() {
     echo "infering"
-    python run_ernie_sequence_labeling.py \
-        --mode infer \
-        --ernie_config_path "${ERNIE_PRETRAINED_MODEL_PATH}/ernie_config.json" \
-        --init_checkpoint "${ERNIE_FINETUNED_MODEL_PATH}" \
-        --init_bound 0.1 \
-        --vocab_path "${ERNIE_PRETRAINED_MODEL_PATH}/vocab.txt" \
-        --batch_size 64 \
-        --random_seed 0 \
-        --num_labels 57 \
-        --max_seq_len 128 \
-        --test_data "${DATA_PATH}/test.tsv" \
-        --label_map_config "./conf/label_map.json" \
-        --do_lower_case true \
-        --use_cuda false
+    export CUDA_VISIBLE_DEVICES=1     # which GPU to use
+    for num in {0..999}
+    do
+            num_f=`echo ${num}|awk '{printf("%05d", $0)}'`
+            python3 run_ernie_sequence_labeling.py \
+                --mode infer \
+                --ernie_config_path "${ERNIE_PRETRAINED_MODEL_PATH}/ernie_config.json" \
+                --init_checkpoint "${ERNIE_FINETUNED_MODEL_PATH}" \
+                --init_bound 0.1 \
+                --vocab_path "${ERNIE_PRETRAINED_MODEL_PATH}/vocab.txt" \
+                --batch_size 64 \
+                --random_seed 0 \
+                --num_labels 57 \
+                --max_seq_len 128 \
+                --test_data "./data/corpus_ernie/part-${num_f}" \
+                --output_file "./results/ernie/part-${num_f}" \
+                --label_map_config "./conf/label_map.json" \
+                --do_lower_case true \
+                --use_cuda true
+    done
+
 
 }
 
